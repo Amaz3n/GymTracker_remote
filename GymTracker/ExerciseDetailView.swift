@@ -138,25 +138,25 @@ struct ExerciseDetailView: View {
     
     private var setsSection: some View {
         Section(header: Text("Sets")) {
-                        ForEach(localExercise.sets.indices, id: \.self) { index in
-                            HStack {
-                                Text("Set \(index + 1)")
-                                Spacer()
-                                Text("\(localExercise.sets[index].weight, specifier: "%.1f") lbs")
-                                Text("\(localExercise.sets[index].reps) reps")
-                            }
-                        }
-                        .onDelete(perform: deleteSets)
-                        
-                        Button(action: {
-                            showingSetPicker = true
-                        }) {
-                            HStack {
-                                Image(systemName: "plus.circle.fill")
-                                Text("Add/Edit Sets")
-                            }
-                        }
-                    }
+            ForEach(localExercise.sets.indices, id: \.self) { index in
+                HStack {
+                    Text("Set \(index + 1)")
+                    Spacer()
+                    Text(WeightUtils.formatWeight(localExercise.sets[index].weight, unit: weightUnit))
+                    Text("\(localExercise.sets[index].reps) reps")
+                }
+            }
+            .onDelete(perform: deleteSets)
+            
+            Button(action: {
+                showingSetPicker = true
+            }) {
+                HStack {
+                    Image(systemName: "plus.circle.fill")
+                    Text("Add/Edit Sets")
+                }
+            }
+        }
         }
     
     private var notesSection: some View {
@@ -297,20 +297,36 @@ struct ExerciseDetailView: View {
     }
     
     private func saveExercise() {
+        // Convert weights to pounds before saving
+        let updatedLocalExercise = ExerciseLog(
+            id: localExercise.id,
+            name: localExercise.name,
+            sets: localExercise.sets.map { set in
+                SetLog(
+                    id: set.id,
+                    weight: WeightUtils.convert(set.weight, from: weightUnit, to: .pounds),
+                    reps: set.reps
+                )
+            },
+            notes: localExercise.notes,
+            mediaAttachments: localExercise.mediaAttachments,
+            date: localExercise.date
+        )
+
         var updatedWorkouts = workouts
         if var exercisesForDate = updatedWorkouts[selectedDate] {
-            if let index = exercisesForDate.firstIndex(where: { $0.id == localExercise.id }) {
-                exercisesForDate[index] = localExercise
+            if let index = exercisesForDate.firstIndex(where: { $0.id == updatedLocalExercise.id }) {
+                exercisesForDate[index] = updatedLocalExercise
             } else {
-                exercisesForDate.append(localExercise)
+                exercisesForDate.append(updatedLocalExercise)
             }
             updatedWorkouts[selectedDate] = exercisesForDate
         } else {
-            updatedWorkouts[selectedDate] = [localExercise]
+            updatedWorkouts[selectedDate] = [updatedLocalExercise]
         }
         
         workouts = updatedWorkouts
-        exercise = localExercise
+        exercise = updatedLocalExercise
         
         let stringKeyedWorkouts = updatedWorkouts.reduce(into: [String: [ExerciseLog]]()) { result, element in
             let dateString = element.key.toString()
@@ -373,6 +389,7 @@ struct ExerciseDetailView: View {
 struct SetPickerView: View {
     @Binding var sets: [SetLog]
     @Environment(\.presentationMode) var presentationMode
+    @AppStorage("weightUnit") private var weightUnit = WeightUnit.pounds
     @State private var currentSetIndex = 0
     @State private var tempWeight: Double = 0
     @State private var tempReps: Int = 0
@@ -464,22 +481,32 @@ struct SetPickerView: View {
             repsPicker
         }
         .onChange(of: tempWeight) { newValue in
-            sets[currentSetIndex].weight = newValue
+            let weightInPounds = WeightUtils.convert(newValue, from: weightUnit, to: .pounds)
+            sets[currentSetIndex].weight = weightInPounds
         }
         .onChange(of: tempReps) { newValue in
             sets[currentSetIndex].reps = newValue
         }
+        
+        .onAppear {
+            if !sets.isEmpty {
+                tempWeight = sets[currentSetIndex].weightInPreferredUnit(weightUnit)
+                tempReps = sets[currentSetIndex].reps
+            }
+        }
+        
     }
 
     private var weightPicker: some View {
         Picker("Weight", selection: $tempWeight) {
             ForEach(0...1000, id: \.self) { w in
-                Text("\(w) lbs").tag(Double(w))
+                Text("\(w) \(weightUnit == .pounds ? "lbs" : "kg")").tag(Double(w))
             }
         }
         .pickerStyle(WheelPickerStyle())
         .frame(width: 100)
     }
+
 
     private var repsPicker: some View {
         Picker("Reps", selection: $tempReps) {

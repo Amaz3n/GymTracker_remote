@@ -8,7 +8,8 @@ struct PerformanceComparisonView: View {
     @State private var dataPoints: [ChartData] = []
     @State private var selectedDataPoint: ChartData?
     @State private var dateRange: DateRangeSelection = .monthly
-    
+    @AppStorage("weightUnit") private var weightUnit = WeightUnit.pounds
+
     enum DateRangeSelection: String, CaseIterable {
         case weekly = "W"
         case monthly = "M"
@@ -139,8 +140,16 @@ struct PerformanceComparisonView: View {
             }
             .chartYScale(domain: yAxisDomain)
             .chartYAxis {
-                AxisMarks(position: .leading)
-            }
+                      AxisMarks(position: .leading) { value in
+                          AxisGridLine()
+                          AxisTick()
+                          AxisValueLabel {
+                              if let weight = value.as(Double.self) {
+                                  Text("\(weight, specifier: "%.0f") \(weightUnit == .pounds ? "lbs" : "kg")")
+                              }
+                          }
+                      }
+                  }
             .chartPlotStyle { plotArea in
                 plotArea
                     .background(Color(UIColor.systemBackground))
@@ -294,8 +303,9 @@ struct PerformanceComparisonView: View {
         
         for (date, exercises) in filteredWorkouts {
             if let exercise = exercises.first(where: { $0.name == selectedExercise }) {
-                let averageWeight = exercise.sets.isEmpty ? 0 : exercise.sets.reduce(0) { $0 + $1.weight } / Double(exercise.sets.count)
-                points.append(ChartData(date: date, weight: averageWeight))            }
+                let averageWeight = exercise.sets.isEmpty ? 0 : exercise.sets.reduce(0) { $0 + $1.weightInPreferredUnit(weightUnit) } / Double(exercise.sets.count)
+                points.append(ChartData(date: date, weight: averageWeight))
+            }
         }
         
         dataPoints = points.sorted(by: { $0.date < $1.date })
@@ -329,7 +339,7 @@ struct PerformanceComparisonView: View {
                return "No data"
            }
            let average = weights.reduce(0, +) / Double(weights.count)
-           return String(format: "%.1f lbs", average)
+           return String(format: "%.1f %@", average, weightUnit == .pounds ? "lbs" : "kg")
        }
        
        private func dateRangeText() -> String {

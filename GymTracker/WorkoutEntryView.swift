@@ -112,8 +112,25 @@ struct WorkoutEntryView: View {
     }
 
     private func saveWorkout() {
+        let updatedExercises = exercises.map { exercise in
+            ExerciseLog(
+                id: exercise.id,
+                name: exercise.name,
+                sets: exercise.sets.map { set in
+                    SetLog(
+                        id: set.id,
+                        weight: WeightUtils.convert(set.weight, from: weightUnit, to: .pounds),
+                        reps: set.reps
+                    )
+                },
+                notes: exercise.notes,
+                mediaAttachments: exercise.mediaAttachments,
+                date: exercise.date
+            )
+        }
+
         var updatedWorkouts = workouts
-        updatedWorkouts[date] = exercises
+        updatedWorkouts[date] = updatedExercises
         workouts = updatedWorkouts
         
         let stringKeyedWorkouts = updatedWorkouts.reduce(into: [String: [ExerciseLog]]()) { result, element in

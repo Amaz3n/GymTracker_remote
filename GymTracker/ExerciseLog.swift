@@ -28,12 +28,12 @@ struct SetLog: Codable, Identifiable, Equatable {
         self.reps = reps
     }
     
-    func weight(in unit: WeightUnit) -> Double {
+    func weightInPreferredUnit(_ unit: WeightUnit) -> Double {
         switch unit {
         case .pounds:
             return weight
         case .kilograms:
-            return weight * 0.453592 // Convert pounds to kilograms
+            return weight * 0.453592
         }
     }
 }

@@ -198,7 +198,7 @@ struct WorkoutTrackerView: View {
                                 .background(selectedDate.isSameDay(as: weekDate) ? Color.blue : Color.clear)
                                 .foregroundColor(selectedDate.isSameDay(as: weekDate) ? .white : .primary)
                                 .cornerRadius(18)
-
+                            
                             Text(dayAbbreviation(for: weekDate))
                                 .font(.caption)
                                 .foregroundColor(.gray)
@@ -238,12 +238,13 @@ struct WorkoutTrackerView: View {
     struct ExerciseListView: View {
         @Binding var workouts: [Date: [ExerciseLog]]
         let selectedDate: Date
+        @AppStorage("weightUnit") private var weightUnit = WeightUnit.pounds
         
         var body: some View {
             List {
                 ForEach(workouts[selectedDate] ?? [], id: \.id) { exercise in
                     NavigationLink(destination: ExerciseDetailView(exercise: binding(for: exercise), workouts: $workouts, selectedDate: .constant(selectedDate))) {
-                        ExerciseRowView(exercise: exercise)
+                        ExerciseRowView(exercise: exercise, weightUnit: weightUnit)
                     }
                 }
                 .onDelete(perform: deleteExercises)
@@ -275,6 +276,7 @@ struct WorkoutTrackerView: View {
     
     struct ExerciseRowView: View {
         let exercise: ExerciseLog
+        let weightUnit: WeightUnit
         
         var body: some View {
             HStack {
@@ -296,11 +298,21 @@ struct WorkoutTrackerView: View {
         }
         
         private var weightDisplay: String {
-            let weights = exercise.sets.map { $0.weight }
+            let weights = exercise.sets.map { roundWeight($0.weightInPreferredUnit(weightUnit)) }
+            let unit = weightUnit == .pounds ? "lbs" : "kg"
             if Set(weights).count == 1, let weight = weights.first {
-                return "\(weight.formatted()) lbs"
+                return "\(weight) \(unit)"
             } else {
-                return "\(weights.min()?.formatted() ?? "0")-\(weights.max()?.formatted() ?? "0") lbs"
+                return "\(weights.min() ?? "0")-\(weights.max() ?? "0") \(unit)"
+            }
+        }
+        
+        private func roundWeight(_ weight: Double) -> String {
+            switch weightUnit {
+            case .pounds:
+                return String(format: "%.1f", weight)
+            case .kilograms:
+                return String(Int(round(weight)))
             }
         }
         
@@ -313,5 +325,4 @@ struct WorkoutTrackerView: View {
             }
         }
     }
-    
 }

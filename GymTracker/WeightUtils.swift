@@ -15,3 +15,15 @@ struct WeightUtils {
         }
     }
 }
+
+extension WeightUtils {
+    static func formatWeight(_ weight: Double, unit: WeightUnit) -> String {
+        let convertedWeight = convert(weight, from: .pounds, to: unit)
+        switch unit {
+        case .pounds:
+            return String(format: "%.1f lbs", convertedWeight)
+        case .kilograms:
+            return "\(Int(round(convertedWeight))) kg"
+        }
+    }
+}
