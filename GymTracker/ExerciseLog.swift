@@ -11,10 +11,31 @@ struct MediaAttachment: Codable, Identifiable, Equatable {
         case video
     }
     
-    static func == (lhs: MediaAttachment, rhs: MediaAttachment) -> Bool {
-        lhs.id == rhs.id &&
-        lhs.url == rhs.url &&
-        lhs.type == rhs.type
+    init(id: UUID = UUID(), url: URL, type: MediaType) {
+        self.id = id
+        self.url = url
+        self.type = type
+    }
+    
+    enum CodingKeys: String, CodingKey {
+        case id
+        case url
+        case type
+    }
+    
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        let urlString = try container.decode(String.self, forKey: .url)
+        url = URL(fileURLWithPath: urlString)
+        type = try container.decode(MediaType.self, forKey: .type)
+    }
+    
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(url.path, forKey: .url)
+        try container.encode(type, forKey: .type)
     }
 }
 struct SetLog: Codable, Identifiable, Equatable {

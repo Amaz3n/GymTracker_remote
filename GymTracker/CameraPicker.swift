@@ -5,6 +5,8 @@ struct CameraPicker: UIViewControllerRepresentable {
     @Binding var image: UIImage?
     @Binding var videoURL: URL?
     @Environment(\.presentationMode) var presentationMode
+    @Binding var showAlert: Bool
+    @Binding var alertMessage: String
 
     func makeUIViewController(context: Context) -> UIImagePickerController {
         let picker = UIImagePickerController()

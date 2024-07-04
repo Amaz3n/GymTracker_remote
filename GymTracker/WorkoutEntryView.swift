@@ -130,13 +130,21 @@ struct WorkoutEntryView: View {
         }
 
         var updatedWorkouts = workouts
-        updatedWorkouts[date] = updatedExercises
+        if var existingExercises = updatedWorkouts[date] {
+            for updatedExercise in updatedExercises {
+                if let index = existingExercises.firstIndex(where: { $0.id == updatedExercise.id }) {
+                    existingExercises[index] = updatedExercise
+                } else {
+                    existingExercises.append(updatedExercise)
+                }
+            }
+            updatedWorkouts[date] = existingExercises
+        } else {
+            updatedWorkouts[date] = updatedExercises
+        }
         workouts = updatedWorkouts
         
-        let stringKeyedWorkouts = updatedWorkouts.reduce(into: [String: [ExerciseLog]]()) { result, element in
-            let dateString = element.key.toString()
-            result[dateString] = element.value
-        }
+        let stringKeyedWorkouts = updatedWorkouts.toStringKeys()
         FileStorage.save(stringKeyedWorkouts)
         
         isPresented = false

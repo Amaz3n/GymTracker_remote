@@ -30,19 +30,33 @@ struct FileStorage {
         }
     
     static func load() -> [String: [ExerciseLog]]? {
-            let url = getWorkoutsFilePath()
-            do {
-                let data = try Data(contentsOf: url)
-                let decoder = JSONDecoder()
-                decoder.dateDecodingStrategy = .iso8601
-                let workouts = try decoder.decode([String: [ExerciseLog]].self, from: data)
-                print("Data loaded successfully from \(url)")
-                return workouts
-            } catch {
-                print("Error loading data: \(error)")
-                return nil
+        let url = getWorkoutsFilePath()
+        do {
+            let data = try Data(contentsOf: url)
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            var workouts = try decoder.decode([String: [ExerciseLog]].self, from: data)
+            
+            // Reconstruct file URLs for media attachments
+            for (date, exercises) in workouts {
+                workouts[date] = exercises.map { exercise in
+                    var updatedExercise = exercise
+                    updatedExercise.mediaAttachments = exercise.mediaAttachments.map { attachment in
+                        var updatedAttachment = attachment
+                        updatedAttachment.url = getMediaFolderPath().appendingPathComponent(attachment.url.lastPathComponent)
+                        return updatedAttachment
+                    }
+                    return updatedExercise
+                }
             }
+            
+            print("Data loaded successfully from \(url)")
+            return workouts
+        } catch {
+            print("Error loading data: \(error)")
+            return nil
         }
+    }
     
     
     static func saveMedia(_ data: Data, with id: UUID, type: MediaAttachment.MediaType) -> URL? {

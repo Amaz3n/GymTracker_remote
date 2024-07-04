@@ -32,6 +32,8 @@ struct ExerciseDetailView: View {
     @State private var tempReps: Int = 0
     @State private var textColor: Color = .primary
     @AppStorage("weightUnit") private var weightUnit = WeightUnit.pounds
+    @State private var showAlert = false
+    @State private var alertMessage = ""
 
 
     
@@ -80,9 +82,12 @@ struct ExerciseDetailView: View {
             matching: .any(of: [.images, .videos]),
             photoLibrary: .shared()
         )
-        .sheet(isPresented: $showingCamera, onDismiss: loadCameraMedia) {
-            CameraPicker(image: $inputImage, videoURL: $inputVideo)
-        }
+        .sheet(isPresented: $showingCamera, content: {
+                    CameraPicker(image: $inputImage, videoURL: $inputVideo, showAlert: $showAlert, alertMessage: $alertMessage)
+                })
+                .alert(isPresented: $showAlert) {
+                    Alert(title: Text("Camera Access"), message: Text(alertMessage), dismissButton: .default(Text("OK")))
+                }
         .actionSheet(isPresented: $showingDeleteAlert) {
             ActionSheet(
                 title: Text("Delete Exercise"),
@@ -241,6 +246,35 @@ struct ExerciseDetailView: View {
             }
         }
     
+    private func showCamera() {
+        let authStatus = AVCaptureDevice.authorizationStatus(for: .video)
+        switch authStatus {
+        case .authorized:
+            showingCamera = true
+        case .notDetermined:
+            AVCaptureDevice.requestAccess(for: .video) { granted in
+                if granted {
+                    DispatchQueue.main.async {
+                        self.showingCamera = true
+                    }
+                } else {
+                    self.showCameraAccessDeniedAlert()
+                }
+            }
+        case .denied, .restricted:
+            showCameraAccessDeniedAlert()
+        @unknown default:
+            break
+        }
+    }
+
+
+    private func showCameraAccessDeniedAlert() {
+        alertMessage = "Camera access is required to take photos. Please enable it in Settings."
+        showAlert = true
+    }
+
+    
     private func updateSuggestions(for input: String) {
         guard !input.isEmpty else {
             suggestions = []
@@ -340,7 +374,7 @@ struct ExerciseDetailView: View {
     private func saveMedia(_ data: Data?, type: MediaAttachment.MediaType) {
         guard let data = data,
               let url = FileStorage.saveMedia(data, with: UUID(), type: type) else { return }
-        let attachment = MediaAttachment(id: UUID(), url: url, type: type)
+        let attachment = MediaAttachment(url: url, type: type)
         localExercise.mediaAttachments.append(attachment)
         
         updateWorkout()
