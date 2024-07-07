@@ -34,21 +34,24 @@ struct ExerciseDetailView: View {
     @AppStorage("weightUnit") private var weightUnit = WeightUnit.pounds
     @State private var showAlert = false
     @State private var alertMessage = ""
+    @StateObject private var viewModel: ExerciseViewModel
 
 
     
     init(exercise: Binding<ExerciseLog>, workouts: Binding<[Date: [ExerciseLog]]>, selectedDate: Binding<Date>) {
-            self._exercise = exercise
-            self._workouts = workouts
-            self._selectedDate = selectedDate
-            let initialExercise = exercise.wrappedValue
-            self._localExercise = State(initialValue: ExerciseLog(
-                name: initialExercise.name,
-                sets: initialExercise.sets.isEmpty ? [SetLog(weight: 0, reps: 0)] : initialExercise.sets,
-                notes: initialExercise.notes,
-                mediaAttachments: initialExercise.mediaAttachments
-            ))
-        }
+        self._exercise = exercise
+        self._workouts = workouts
+        self._selectedDate = selectedDate
+        let initialExercise = exercise.wrappedValue
+        self._localExercise = State(initialValue: ExerciseLog(
+            name: initialExercise.name,
+            sets: initialExercise.sets.isEmpty ? [SetLog(weight: 0, reps: 0)] : initialExercise.sets,
+            notes: initialExercise.notes,
+            mediaAttachments: initialExercise.mediaAttachments
+        ))
+        let allExerciseNames = Self.getAllUniqueExerciseNames(from: workouts.wrappedValue)
+        self._viewModel = StateObject(wrappedValue: ExerciseViewModel(allExerciseNames: allExerciseNames))
+    }
     
     var isNewExercise: Bool {
         workouts[selectedDate]?.contains(where: { $0.id == exercise.id }) != true
@@ -71,6 +74,11 @@ struct ExerciseDetailView: View {
                 }
             }
         }
+        .onAppear {
+            viewModel.name = localExercise.name
+        }
+    
+    
         .onChange(of: selectedItems) { newValue in
             Task {
                 await handleSelectedItems(newValue)
@@ -108,39 +116,37 @@ struct ExerciseDetailView: View {
     
     private var exerciseDetailsSection: some View {
         Section(header: Text("Exercise Details")) {
-            VStack(alignment: .leading, spacing: 5) {
-                TextField("Exercise Name", text: $localExercise.name)
-                    .onChange(of: localExercise.name) { newValue in
-                        if !isAnimating {
-                            updateSuggestions(for: newValue)
+                VStack(alignment: .leading, spacing: 5) {
+                    TextField("Exercise Name", text: $viewModel.name)
+                        .onChange(of: viewModel.name) { newValue in
+                            localExercise.name = newValue
+                            viewModel.updateSuggestions(for: newValue)
                         }
-                    }
-                    .foregroundColor(textColor)
-                    .shadow(color: .blue.opacity(glowOpacity), radius: 2, x: 0, y: 0)
-                    .animation(.easeInOut(duration: 0.3), value: textColor)
-                    .animation(.easeInOut(duration: 0.3), value: glowOpacity)
-                
-                if showSuggestions && !suggestions.isEmpty {
-                    Text("Suggested Matches")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
+                        .foregroundColor(viewModel.textColor)
+                        .shadow(color: .blue.opacity(viewModel.glowOpacity), radius: 2, x: 0, y: 0)
+                        .animation(.easeInOut(duration: 0.3), value: viewModel.textColor)
+                        .animation(.easeInOut(duration: 0.3), value: viewModel.glowOpacity)
                     
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 10) {
-                            ForEach(suggestions, id: \.self) { suggestion in
-                                SuggestionButton(suggestion: suggestion) {
-                                    animateTextSelection(suggestion)
+                    if viewModel.showSuggestions && !viewModel.suggestions.isEmpty {
+                        Text("Suggested Matches")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 10) {
+                                ForEach(viewModel.suggestions, id: \.self) { suggestion in
+                                    SuggestionButton(suggestion: suggestion) {
+                                        viewModel.animateTextSelection(suggestion)
+                                    }
                                 }
                             }
                         }
+                        .frame(height: 40)
                     }
-                    .frame(height: 40)
                 }
+                .animation(.easeInOut, value: viewModel.showSuggestions)
             }
-            .animation(.easeInOut, value: showSuggestions)
         }
-    }
-    
     private var setsSection: some View {
         Section(header: Text("Sets")) {
             ForEach(localExercise.sets.indices, id: \.self) { index in
@@ -274,24 +280,33 @@ struct ExerciseDetailView: View {
         showAlert = true
     }
 
-    
+ 
     private func updateSuggestions(for input: String) {
         guard !input.isEmpty else {
-            suggestions = []
+            viewModel.suggestions = []
             withAnimation {
-                showSuggestions = false
+                viewModel.showSuggestions = false
             }
             return
         }
         
-        let allExercises = getAllExerciseNames()
-        suggestions = allExercises.filter { $0.lowercased().hasPrefix(input.lowercased()) }
+        viewModel.suggestions = viewModel.allExerciseNames.filter { $0.lowercased().hasPrefix(input.lowercased()) }
         withAnimation {
-            showSuggestions = !suggestions.isEmpty
+            viewModel.showSuggestions = !viewModel.suggestions.isEmpty
         }
     }
     
-    private func getAllExerciseNames() -> [String] {
+    private static func getAllUniqueExerciseNames(from workouts: [Date: [ExerciseLog]]) -> [String] {
+        var exerciseNames = Set<String>()
+        for exercises in workouts.values {
+            for exercise in exercises {
+                exerciseNames.insert(exercise.name)
+            }
+        }
+        return Array(exerciseNames)
+    }
+    
+    private static func getAllExerciseNames(from workouts: [Date: [ExerciseLog]]) -> [String] {
         var exerciseNames = Set<String>()
         for exercises in workouts.values {
             for exercise in exercises {
@@ -639,85 +654,98 @@ struct SuggestionButton: View {
 
 struct MediaThumbnail: View {
     let attachment: MediaAttachment
-    @State private var image: UIImage?
     @State private var isShowingFullScreen = false
     
     var body: some View {
         Button(action: {
             isShowingFullScreen = true
         }) {
-            if let image = image {
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFill()
-                    .frame(width: 80, height: 80)
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
+            if attachment.type == .image {
+                AsyncImage(url: attachment.url) {
+                    ProgressView()
+                }
+                .scaledToFill()
+                .frame(width: 80, height: 80)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
             } else {
-                Image(systemName: attachment.type == .video ? "video" : "photo")
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: 80, height: 80)
-                    .foregroundColor(.blue)
-                    .background(Color.gray.opacity(0.2))
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                VideoThumbnail(url: attachment.url)
             }
         }
-        .onAppear(perform: loadThumbnail)
         .fullScreenCover(isPresented: $isShowingFullScreen) {
             MediaViewer(attachment: attachment)
         }
     }
-    
-    private func loadThumbnail() {
-        if attachment.type == .image {
-            image = UIImage(contentsOfFile: attachment.url.path)
-        } else {
-            let asset = AVAsset(url: attachment.url)
+    struct VideoThumbnail: View {
+        let url: URL
+        @State private var thumbnail: UIImage?
+        
+        var body: some View {
+            Group {
+                if let thumbnail = thumbnail {
+                    Image(uiImage: thumbnail)
+                        .resizable()
+                        .scaledToFill()
+                } else {
+                    Image(systemName: "video")
+                        .resizable()
+                        .scaledToFit()
+                        .foregroundColor(.blue)
+                        .background(Color.gray.opacity(0.2))
+                }
+            }
+            .frame(width: 80, height: 80)
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .onAppear(perform: loadThumbnail)
+        }
+        
+        private func loadThumbnail() {
+            let asset = AVAsset(url: url)
             let imageGenerator = AVAssetImageGenerator(asset: asset)
             imageGenerator.appliesPreferredTrackTransform = true
             
-            do {
-                let cgImage = try imageGenerator.copyCGImage(at: .zero, actualTime: nil)
-                image = UIImage(cgImage: cgImage)
-            } catch {
-                print("Error generating video thumbnail: \(error)")
+            imageGenerator.generateCGImagesAsynchronously(forTimes: [NSValue(time: .zero)]) { _, image, _, _, _ in
+                if let image = image {
+                    DispatchQueue.main.async {
+                        self.thumbnail = UIImage(cgImage: image)
+                    }
+                }
             }
         }
     }
-}
-
-struct MediaViewer: View {
-    let attachment: MediaAttachment
-    @Environment(\.presentationMode) var presentationMode
     
-    var body: some View {
-        ZStack {
-            Color.black.edgesIgnoringSafeArea(.all)
-            
-            if attachment.type == .image {
-                if let image = UIImage(contentsOfFile: attachment.url.path) {
-                    Image(uiImage: image)
-                        .resizable()
-                        .scaledToFit()
-                }
-            } else {
-                VideoPlayer(player: AVPlayer(url: attachment.url))
-            }
-            
-            VStack {
-                HStack {
-                    Spacer()
-                    Button(action: { presentationMode.wrappedValue.dismiss() }) {
-                        Image(systemName: "xmark")
-                            .foregroundColor(.white)
-                            .padding()
-                            .background(Color.black.opacity(0.5))
-                            .clipShape(Circle())
+    struct MediaViewer: View {
+        let attachment: MediaAttachment
+        @Environment(\.presentationMode) var presentationMode
+        
+        var body: some View {
+            ZStack {
+                Color.black.edgesIgnoringSafeArea(.all)
+                
+                if attachment.type == .image {
+                    if let image = UIImage(contentsOfFile: attachment.url.path) {
+                        Image(uiImage: image)
+                            .resizable()
+                            .scaledToFit()
                     }
+                } else {
+                    VideoPlayer(player: AVPlayer(url: attachment.url))
                 }
-                Spacer()
+                
+                VStack {
+                    HStack {
+                        Spacer()
+                        Button(action: { presentationMode.wrappedValue.dismiss() }) {
+                            Image(systemName: "xmark")
+                                .foregroundColor(.white)
+                                .padding()
+                                .background(Color.black.opacity(0.5))
+                                .clipShape(Circle())
+                        }
+                    }
+                    Spacer()
+                }
+                .padding()
             }
-            .padding()
         }
     }
 }

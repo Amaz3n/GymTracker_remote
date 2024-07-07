@@ -11,6 +11,8 @@
 		AFB7C2F12C29DC3A00CB949C /* FileStorage.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFB7C2F02C29DC3A00CB949C /* FileStorage.swift */; };
 		AFBB7DB72C36E4F60083BD08 /* ExerciseListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFBB7DB62C36E4F60083BD08 /* ExerciseListView.swift */; };
 		AFBB7DBB2C370EAE0083BD08 /* WeightUtils.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFBB7DBA2C370EAB0083BD08 /* WeightUtils.swift */; };
+		AFBB7DBF2C3725F10083BD08 /* ExerciseViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFBB7DBE2C3725F10083BD08 /* ExerciseViewModel.swift */; };
+		AFBB7DC12C372B640083BD08 /* AsyncImage.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFBB7DC02C372B640083BD08 /* AsyncImage.swift */; };
 		AFCE42F32C2916BB00DFD759 /* GymTrackerApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFCE42F22C2916BB00DFD759 /* GymTrackerApp.swift */; };
 		AFCE42F52C2916BB00DFD759 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AFCE42F42C2916BB00DFD759 /* ContentView.swift */; };
 		AFCE42F72C2916BC00DFD759 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = AFCE42F62C2916BC00DFD759 /* Assets.xcassets */; };
@@ -79,6 +81,8 @@
 		AFB7C2F02C29DC3A00CB949C /* FileStorage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FileStorage.swift; sourceTree = "<group>"; };
 		AFBB7DB62C36E4F60083BD08 /* ExerciseListView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseListView.swift; sourceTree = "<group>"; };
 		AFBB7DBA2C370EAB0083BD08 /* WeightUtils.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WeightUtils.swift; sourceTree = "<group>"; };
+		AFBB7DBE2C3725F10083BD08 /* ExerciseViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExerciseViewModel.swift; sourceTree = "<group>"; };
+		AFBB7DC02C372B640083BD08 /* AsyncImage.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AsyncImage.swift; sourceTree = "<group>"; };
 		AFCE42EF2C2916BB00DFD759 /* GymTracker.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = GymTracker.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		AFCE42F22C2916BB00DFD759 /* GymTrackerApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GymTrackerApp.swift; sourceTree = "<group>"; };
 		AFCE42F42C2916BB00DFD759 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -169,9 +173,11 @@
 				AFBB7DB62C36E4F60083BD08 /* ExerciseListView.swift */,
 				AFF77C392C2BD2480070982B /* CalendarView.swift */,
 				AFFB4B9A2C2C865F005E6751 /* ColorSchemeOption.swift */,
+				AFBB7DBE2C3725F10083BD08 /* ExerciseViewModel.swift */,
 				AFFB4B982C2C8127005E6751 /* SettingsView.swift */,
 				AFB7C2F02C29DC3A00CB949C /* FileStorage.swift */,
 				AFFD39942C31EE410072DF28 /* CameraPicker.swift */,
+				AFBB7DC02C372B640083BD08 /* AsyncImage.swift */,
 				AFCE42F62C2916BC00DFD759 /* Assets.xcassets */,
 				AFCE42F82C2916BC00DFD759 /* Preview Content */,
 			);
@@ -375,6 +381,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				AFBB7DBF2C3725F10083BD08 /* ExerciseViewModel.swift in Sources */,
 				AFCE42F52C2916BB00DFD759 /* ContentView.swift in Sources */,
 				AFB7C2F12C29DC3A00CB949C /* FileStorage.swift in Sources */,
 				AFCE42F32C2916BB00DFD759 /* GymTrackerApp.swift in Sources */,
@@ -388,6 +395,7 @@
 				AFCE43372C2925E900DFD759 /* ExerciseLog.swift in Sources */,
 				AFCE43352C29214C00DFD759 /* CalendarOverlayView.swift in Sources */,
 				AFFB4B9B2C2C865F005E6751 /* ColorSchemeOption.swift in Sources */,
+				AFBB7DC12C372B640083BD08 /* AsyncImage.swift in Sources */,
 				AFCE43332C291BB000DFD759 /* PerformanceComparisonView.swift in Sources */,
 				AFF77C362C2A67AC0070982B /* ExerciseDetailView.swift in Sources */,
 				AFCE43222C29174100DFD759 /* WorkoutEntryView.swift in Sources */,

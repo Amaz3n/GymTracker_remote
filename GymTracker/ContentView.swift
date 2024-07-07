@@ -138,7 +138,9 @@ struct WorkoutTrackerView: View {
             .presentationDetents([.large])
         }
         .sheet(isPresented: $showingCalendarView) {
-            CalendarView(workouts: $workouts, selectedDate: $selectedDate)
+            NavigationView {
+                CalendarView(workouts: $workouts, selectedDate: $selectedDate)
+            }
         }
     }
     
